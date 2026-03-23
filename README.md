@@ -333,31 +333,9 @@ python utils/query_results.py --export events_export.json
 
 ---
 
-## Troubleshooting
 
-| Problem | Fix |
-|---------|-----|
-| `Cannot open video` | Check `config/config.json → video.source` path |
-| `yolov8n-face.pt not found` | Run `python setup_models.py` or download manually |
-| `InsightFace model download fails` | Check internet; models saved to `~/.insightface/models/` |
-| No faces detected | Lower `confidence_threshold` to `0.3` |
-| Same person counted twice | Lower `similarity_threshold` to `0.35` |
-| Different people merged | Raise `similarity_threshold` to `0.55` |
-| High CPU usage | Raise `skip_frames` to `5` or `9` |
-| Port 5000 in use | Change `frontend.port` in config |
 
----
+## Demo Video-loom link:
 
-## Demo Video
+https://www.loom.com/share/cde10973fce94520b3c266cd87544a1e
 
-> **[Insert your Loom or YouTube demo link here]**
->
-> Your video should show:
-> 1. `python setup_models.py` running successfully
-> 2. `python main.py` processing the sample video (OpenCV window)
-> 3. `python main.py --web` with the browser dashboard open
-> 4. `python utils/query_results.py` showing unique visitor count
-
----
-
-*This project is a part of a hackathon run by https://katomaran.com*
