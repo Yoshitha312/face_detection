@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Tracker — Live Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    :root {
+      --bg:      #080d18;
+      --surface: #0f1929;
+      --border:  #1a2740;
+      --accent:  #00c8ff;
+      --green:   #00e87a;
+      --orange:  #ff7c38;
+      --red:     #ff3b6e;
+      --muted:   #4a6080;
+      --text:    #cdd8e8;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Courier New', monospace;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .pulse {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+      animation: blink 1.4s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+    header h1 { font-size: 1rem; letter-spacing: 3px; color: var(--accent); }
+    .header-right { margin-left: auto; font-size: .72rem; color: var(--muted); }
+
+    /* ── main grid ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── video panel ── */
+    .video-panel {
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .video-panel img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .no-signal {
+      position: absolute;
+      text-align: center;
+      color: var(--muted);
+      font-size: .8rem;
+      letter-spacing: 2px;
+    }
+
+    /* ── side panel ── */
+    .side {
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .section {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-title {
+      font-size: .63rem;
+      text-transform: uppercase;
+      letter-spacing: 2.5px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── stat grid ── */
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+    .stat-val { font-size: 1.9rem; font-weight: 700; color: var(--accent); line-height: 1; }
+    .stat-val.green  { color: var(--green); }
+    .stat-val.orange { color: var(--orange); }
+    .stat-lbl { font-size: .58rem; color: var(--muted); text-transform: uppercase;
+                letter-spacing: 1.5px; margin-top: 5px; }
+
+    /* ── event feed ── */
+    .event-feed { display: flex; flex-direction: column; gap: 5px; }
+    .event-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 8px 10px;
+      animation: fadeIn .3s ease;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+    .ev-row1 { display: flex; align-items: center; gap: 8px; }
+    .ev-badge {
+      font-size: .58rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      padding: 2px 6px; border-radius: 3px;
+    }
+    .badge-entry      { background: rgba(0,232,122,.15); color: var(--green); }
+    .badge-exit       { background: rgba(255,124,56,.15); color: var(--orange); }
+    .badge-registered { background: rgba(0,200,255,.15); color: var(--accent); }
+    .ev-id  { font-size: .7rem; color: var(--text); flex: 1; overflow: hidden;
+              text-overflow: ellipsis; white-space: nowrap; }
+    .ev-time { font-size: .6rem; color: var(--muted); margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="pulse"></div>
+    <h1>FACE TRACKER / LIVE DASHBOARD</h1>
+    <div class="header-right" id="clock">--:--:--</div>
+  </header>
+
+  <div class="layout">
+    <!-- video -->
+    <div class="video-panel">
+      <div class="no-signal" id="no-signal">CONNECTING TO STREAM…</div>
+      <img id="feed" src="/video_feed" alt="Live Feed"
+           onload="document.getElementById('no-signal').style.display='none'"
+           onerror="document.getElementById('no-signal').style.display='block'">
+    </div>
+
+    <!-- side panel -->
+    <div class="side">
+
+      <!-- stats -->
+      <div class="section">
+        <div class="section-title">Live Stats</div>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-val green" id="s-unique">0</div>
+            <div class="stat-lbl">Unique Visitors</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="s-active">0</div>
+            <div class="stat-lbl">Active Tracks</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val orange" id="s-entries">0</div>
+            <div class="stat-lbl">Total Entries</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="s-frame">0</div>
+            <div class="stat-lbl">Frame</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- event feed -->
+      <div class="section" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div class="section-title">Event Feed</div>
+        <div class="event-feed" id="event-feed" style="overflow-y:auto;flex:1">
+          <div style="color:var(--muted);font-size:.72rem;text-align:center;padding:20px 0">
+            Waiting for events…
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ── clock ──────────────────────────────────────────────────────────
+    setInterval(() => {
+      document.getElementById('clock').textContent =
+        new Date().toLocaleTimeString('en-GB');
+    }, 1000);
+
+    // ── socket.io ──────────────────────────────────────────────────────
+    const socket = io();
+    let events = [];
+
+    socket.on('stats_update', s => {
+      document.getElementById('s-unique').textContent  = s.unique_visitors ?? 0;
+      document.getElementById('s-active').textContent  = s.active_tracks   ?? 0;
+      document.getElementById('s-entries').textContent = s.total_entries    ?? 0;
+      document.getElementById('s-frame').textContent   = s.frame_number     ?? 0;
+    });
+
+    socket.on('new_event', ev => {
+      events.unshift(ev);
+      if (events.length > 30) events.pop();
+      renderEvents();
+    });
+
+    function renderEvents() {
+      const feed = document.getElementById('event-feed');
+      if (!events.length) return;
+      feed.innerHTML = events.map(ev => {
+        const badgeClass =
+          ev.event_type === 'entry'      ? 'badge-entry'      :
+          ev.event_type === 'exit'       ? 'badge-exit'        :
+          ev.event_type === 'registered' ? 'badge-registered'  : 'badge-entry';
+        const ts = ev.timestamp ? ev.timestamp.split('T')[1]?.slice(0,8) : '';
+        return `<div class="event-item">
+          <div class="ev-row1">
+            <span class="ev-badge ${badgeClass}">${ev.event_type}</span>
+            <span class="ev-id">${ev.face_id}</span>
+          </div>
+          <div class="ev-time">${ts}  ·  frame ${ev.frame ?? ''}</div>
+        </div>`;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+{
+  "detection": {
+    "skip_frames": 3,
+    "confidence_threshold": 0.5,
+    "yolo_model": "yolov8n-face.pt",
+    "iou_threshold": 0.45,
+    "min_face_size": 30
+  },
+  "recognition": {
+    "model_name": "buffalo_l",
+    "similarity_threshold": 0.45,
+    "embedding_size": 512,
+    "device": "cpu"
+  },
+  "tracking": {
+    "max_disappeared": 30,
+    "iou_threshold": 0.3,
+    "min_register_frames": 3
+  },
+  "logging": {
+    "log_file": "logs/events.log",
+    "image_quality": 95,
+    "base_log_dir": "logs"
+  },
+  "database": {
+    "path": "data/face_tracker.db"
+  },
+  "video": {
+    "source": "sample_video.mp4",
+    "video_folder": "/Users/yoshithakandhasamy/Downloads/face_tracker/Video Datasets",
+    "video_extensions": [
+      ".mp4",
+      ".avi",
+      ".mov",
+      ".mkv",
+      ".wmv",
+      ".flv"
+    ],
+    "rtsp_url": "rtsp://username:password@ip:port/stream",
+    "use_rtsp": false,
+    "use_folder": true,
+    "display_output": false,
+    "save_output": false,
+    "output_video": "output/processed_output.mp4"
+  },
+  "frontend": {
+    "host": "0.0.0.0",
+    "port": 5000
+  }
+}
