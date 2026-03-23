@@ -1,6 +1,6 @@
 {
   "detection": {
-    "skip_frames": 3,
+    "skip_frames": 5,
     "confidence_threshold": 0.5,
     "yolo_model": "yolov8n-face.pt",
     "iou_threshold": 0.45,
@@ -19,7 +19,7 @@
   },
   "logging": {
     "log_file": "logs/events.log",
-    "image_quality": 95,
+    "image_quality": 50,
     "base_log_dir": "logs"
   },
   "database": {

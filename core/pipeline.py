@@ -86,7 +86,7 @@ class FaceTrackingPipeline:
         self.db   = DatabaseManager(db["path"])
         self.elog = EventLogger(
             base_log_dir=lg["base_log_dir"],
-            image_quality=lg.get("image_quality", 95),
+            image_quality=lg.get("image_quality", 50),
         )
 
         self._emb_cache = self.db.get_all_embeddings()
