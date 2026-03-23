@@ -339,3 +339,6 @@ python utils/query_results.py --export events_export.json
 
 https://www.loom.com/share/cde10973fce94520b3c266cd87544a1e
 
+
+
+“This project is a part of a hackathon run by https://katomaran.com ”
